@@ -54,11 +54,8 @@ function LandingPage() {
                     <li><strong>Groq Second Model</strong> – Alternate Groq model with diverse output.</li>
                 </ul>
 
-                <img
-                    src="/chat_image.PNG"
-                    alt="AI Chat Preview"
-                    style={styles.aiImage}
-                />
+                <img src={`${process.env.PUBLIC_URL}/chat_image.PNG`} alt="AI Chat Preview" style={styles.aiImage} />
+
 
             </section>
 
