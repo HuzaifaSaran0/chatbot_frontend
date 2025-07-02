@@ -3,6 +3,52 @@ import { getToken } from "../utils/auth"; // 👈 Import token getter
 import { removeToken } from "../utils/auth"; // 👈 Import token remove
 import { useNavigate } from "react-router-dom"; // 👈 Import useNavigate for navigation
 import { fetchUserProfile } from "../utils/auth"; // Adjust the import based on your API utility
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+function CodeBlockWithCopyButton({ code }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch (err) {
+            console.error("Copy failed:", err);
+        }
+    };
+
+    return (
+        <div style={{ position: "relative", margin: "0.25rem 0" }}>
+            <pre style={{
+                background: "#eee",
+                padding: "10px",
+                borderRadius: "8px",
+                overflowX: "auto",
+            }}>
+                <code>{code}</code>
+            </pre>
+            <button
+                onClick={handleCopy}
+                style={{
+                    position: "absolute",
+                    top: "6px",
+                    right: "6px",
+                    fontSize: "0.8rem",
+                    padding: "4px 8px",
+                    border: "none",
+                    background: "#007bff",
+                    color: "white",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                }}
+            >
+                {copied ? "Copied!" : "Copy"}
+            </button>
+        </div>
+    );
+}
 
 
 function ChatPage() {
@@ -65,7 +111,7 @@ function ChatPage() {
             .then((data) => {
                 const botReply = {
                     sender: "bot",
-                    text: data.reply || "🤖 (No response from server)",
+                    text: data.reply || "🤖 (Sorry, some problem occurred in replying. message again to get your query done.)",
                 };
                 setMessages((prev) => [...prev, botReply]);
             })
@@ -118,7 +164,7 @@ function ChatPage() {
                     {showMenu && (
                         <div style={styles.dropdownMenu}>
                             <p style={{ margin: "0", fontWeight: "bold" }}>{userName}</p>
-                            
+
                             <button onClick={handleLogout} style={styles.logoutButton}>Logout</button>
                         </div>
                     )}
@@ -127,15 +173,41 @@ function ChatPage() {
 
             <div style={styles.chatBox}>
                 {messages.map((msg, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            ...styles.message,
-                            alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                            backgroundColor: msg.sender === "user" ? "#d1e7dd" : "#f5f5f5",
-                        }}
-                    >
-                        {msg.text}
+                    <div key={i} style={{
+                        ...styles.message,
+                        wordBreak: "break-word",
+                        // whiteSpace: "pre-wrap",
+                        alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                        backgroundColor: msg.sender === "user" ? "#d1e7dd" : "#f5f5f5",
+                    }}>
+                        <ReactMarkdown
+                            children={msg.text}
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                                p: ({ children }) => (
+                                    <p style={{ margin: "0 0 0.3rem 0" }}>{children}</p>  // tighter spacing
+                                ),
+                                code({ inline, children, ...props }) {
+                                    const codeText = String(children).trim();
+
+                                    if (!inline) {
+                                        return <CodeBlockWithCopyButton code={codeText} />;
+                                    }
+
+                                    return (
+                                        <code style={{
+                                            background: "#eee",
+                                            padding: "2px 6px",
+                                            borderRadius: "4px"
+                                        }}>
+                                            {children}
+                                        </code>
+                                    );
+                                }
+
+
+                            }}
+                        />
                     </div>
                 ))}
                 <div ref={chatEndRef} />
