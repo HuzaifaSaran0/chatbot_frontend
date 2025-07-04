@@ -8,7 +8,7 @@ import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
-    <BrowserRouter basename="/chatbot_frontend">
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
