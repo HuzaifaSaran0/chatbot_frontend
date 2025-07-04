@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { saveToken } from "../utils/auth";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const LoginPage = () => {
     const [email, setEmail] = useState("");
@@ -28,45 +29,186 @@ const LoginPage = () => {
         }
     };
 
+    const login = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                const res = await fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/auth/google/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        access_token: tokenResponse.access_token,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.key) {
+                    saveToken(data.key);
+                    navigate("/chat");
+                } else {
+                    console.error("Google login failed:", data);
+                    setError("Google login failed");
+                }
+            } catch (err) {
+                console.error(err);
+                setError("Network error");
+            }
+        },
+        onError: () => {
+            console.error("Google Login Failed");
+            setError("Google login failed");
+        },
+        flow: "implicit",
+    });
+
     return (
-        <div style={styles.container}>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin} style={styles.form}>
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    style={styles.input}
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={styles.input}
-                />
-                <button type="submit" style={styles.button}>Login</button>
+        <div style={styles.wrapper}>
+            <div style={styles.card}>
+                <h2 style={styles.heading}>Welcome Back</h2>
+                <p style={styles.subHeading}>Login to continue chatting</p>
+
+                <form onSubmit={handleLogin} style={styles.form}>
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        style={styles.input}
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        style={styles.input}
+                    />
+                    <button type="submit" style={styles.primaryButton}>
+                        Login
+                    </button>
+                </form>
+
+                <div style={styles.divider}>or</div>
+                <div style={styles.googleButtonContainer}>
+                    <button onClick={() => login()} style={styles.googleButton}>
+                        <img
+                            src="https://www.svgrepo.com/show/475656/google-color.svg"
+                            alt="Google"
+                            style={{ width: "20px", marginRight: "10px" }}
+                        />
+                        Continue with Google
+                    </button>
+                </div>
+
                 {error && <p style={styles.error}>{error}</p>}
-            </form>
+                <p style={styles.switchText}>
+                    Don’t have an account?{" "}
+                    <span style={styles.link} onClick={() => navigate("/signup")}>
+                        Sign up
+                    </span>
+                </p>
+            </div>
         </div>
     );
 };
 
 const styles = {
-    container: { maxWidth: "400px", margin: "auto", padding: "2rem" },
-    form: { display: "flex", flexDirection: "column", gap: "1rem" },
-    input: { padding: "0.7rem", borderRadius: "6px", border: "1px solid #ccc" },
-    button: {
-        padding: "0.7rem",
+    wrapper: {
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#f8f9fa",
+    },
+    card: {
+        backgroundColor: "#fff",
+        padding: "2.5rem",
+        borderRadius: "12px",
+        boxShadow: "0 6px 20px rgba(0, 0, 0, 0.1)",
+        width: "100%",
+        maxWidth: "400px",
+    },
+    heading: {
+        marginBottom: "0.5rem",
+        fontSize: "1.8rem",
+        fontWeight: "600",
+        textAlign: "center",
+        color: "#343a40",
+    },
+    subHeading: {
+        marginBottom: "1.5rem",
+        fontSize: "1rem",
+        textAlign: "center",
+        color: "#6c757d",
+    },
+    form: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+    },
+    input: {
+        padding: "0.75rem",
+        borderRadius: "8px",
+        border: "1px solid #ced4da",
+        fontSize: "1rem",
+    },
+    primaryButton: {
+        padding: "0.75rem",
         backgroundColor: "#198754",
         color: "#fff",
         border: "none",
-        borderRadius: "6px",
+        borderRadius: "8px",
+        fontWeight: "bold",
+        cursor: "pointer",
+        fontSize: "1rem",
+        transition: "background-color 0.3s",
     },
-    error: { color: "red", fontSize: "0.9rem" },
+    googleButtonContainer: {
+        display: "flex",
+        justifyContent: "center",
+        marginTop: "1rem",
+    },
+    googleButton: {
+        marginTop: "1rem",
+        padding: "0.75rem",
+        backgroundColor: "#fff",
+        color: "#000",
+        border: "1px solid #ced4da",
+        borderRadius: "8px",
+        fontWeight: "500",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "1rem",
+        cursor: "pointer",
+        transition: "box-shadow 0.3s",
+    },
+    divider: {
+        marginTop: "1.5rem",
+        marginBottom: "1rem",
+        textAlign: "center",
+        color: "#adb5bd",
+        fontSize: "0.85rem",
+    },
+    error: {
+        color: "red",
+        fontSize: "0.9rem",
+        marginTop: "1rem",
+        textAlign: "center",
+    },
+    switchText: {
+        marginTop: "1rem",
+        textAlign: "center",
+        color: "#6c757d",
+        fontSize: "0.9rem",
+    },
+    link: {
+        color: "#0d6efd",
+        cursor: "pointer",
+        fontWeight: "bold",
+    },
+
 };
 
 export default LoginPage;

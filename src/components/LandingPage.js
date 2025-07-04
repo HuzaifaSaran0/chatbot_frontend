@@ -13,7 +13,6 @@ function LandingPage() {
     useEffect(() => {
         const loadUser = async () => {
             const user = await fetchUserProfile();
-            console.log("Fetched user:", user); // <- debug here
 
             if (user) {
                 setUserName(user.username); // or user.username if you enable it
