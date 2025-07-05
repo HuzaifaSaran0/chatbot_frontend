@@ -1,17 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { saveToken } from "../utils/auth";
 import { useGoogleLogin } from "@react-oauth/google";
+
 
 const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false); // ⬅️ Add this state
+
+    useEffect(() => {
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerText = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+        document.head.appendChild(styleSheet);
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError(null);
+        setLoading(true);
 
         const res = await fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/auth/login/", {
             method: "POST",
@@ -52,6 +67,8 @@ const LoginPage = () => {
             } catch (err) {
                 console.error(err);
                 setError("Network error");
+            } finally {
+                setLoading(false); // ⬅️ Reset loading state
             }
         },
         onError: () => {
@@ -84,9 +101,17 @@ const LoginPage = () => {
                         required
                         style={styles.input}
                     />
-                    <button type="submit" style={styles.primaryButton}>
-                        Login
+                    <button type="submit" style={styles.primaryButton} disabled={loading}>
+                        {loading ? (
+                            <>
+                                <span style={styles.spinner}></span> Logging in...
+                            </>
+                        ) : (
+                            "Login"
+                        )}
                     </button>
+
+
                 </form>
 
                 <div style={styles.divider}>or</div>
@@ -208,6 +233,18 @@ const styles = {
         cursor: "pointer",
         fontWeight: "bold",
     },
+    spinner: {
+        width: "16px",
+        height: "16px",
+        border: "3px solid #fff",
+        borderTop: "3px solid transparent",
+        borderRadius: "50%",
+        display: "inline-block",
+        verticalAlign: "middle",
+        marginRight: "8px",
+        animation: "spin 1s linear infinite",
+    },
+
 
 };
 

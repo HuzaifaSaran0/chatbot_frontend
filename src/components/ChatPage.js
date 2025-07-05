@@ -64,10 +64,9 @@ function ChatPage() {
     useEffect(() => {
         const loadUser = async () => {
             const user = await fetchUserProfile();
-            console.log("Fetched user:", user); // <- debug here
 
             if (user) {
-                setUserName(user.username); // or user.username if you enable it
+                setUserName(user.username);
             }
         };
         loadUser();
@@ -103,7 +102,7 @@ function ChatPage() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                ...(getToken() && { Authorization: `Token ${getToken()}` }), // 👈 add auth token if present
+                ...(getToken() && { Authorization: `Token ${getToken()}` }),
             },
             body: JSON.stringify({ message: input }),
         })
@@ -141,7 +140,7 @@ function ChatPage() {
 
     return (
         <div style={styles.container}>
-            <h2 style={styles.heading}>💬 AI Chat</h2>
+            <h2 style={styles.heading}>💬 Saran AI Chat</h2>
 
             <div style={styles.topControls}>
                 <div style={styles.dropdownContainer}>

@@ -6,7 +6,7 @@ import { fetchUserProfile } from '../utils/auth'; // Adjust the import based on 
 function LandingPage() {
     const navigate = useNavigate();
     const isLoggedIn = isAuthenticated();
-    const [showMenu, setShowMenu] = useState(false);
+    const [setShowMenu] = useState(false);
     const [userName, setUserName] = useState('');
     const menuRef = useRef(null);
 
@@ -42,7 +42,7 @@ function LandingPage() {
     return (
         <div style={styles.pageContainer}>
             <h1 style={styles.title}><p style={{ margin: 0, fontWeight: 'bold' }}>Hello {userName}</p>
-                🤖 Welcome to AI ChatApp</h1>
+                🤖 Welcome to Saran AI ChatApp</h1>
             <p style={styles.subtitle}>A minimal and smart assistant powered by DeepSeek and Groq Mistral</p>
 
             <section style={styles.modelSection}>
