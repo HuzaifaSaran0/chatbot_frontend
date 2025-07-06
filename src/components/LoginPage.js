@@ -41,6 +41,7 @@ const LoginPage = () => {
             navigate("/chat");
         } else {
             setError("Invalid credentials or error occurred.");
+            setLoading(false);
         }
     };
 

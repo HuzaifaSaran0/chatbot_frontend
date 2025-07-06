@@ -48,6 +48,7 @@ const SignupPage = () => {
                 data?.username?.[0] ||
                 "Something went wrong"
             );
+            setLoading(false);
         }
     };
 

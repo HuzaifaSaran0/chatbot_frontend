@@ -95,7 +95,7 @@ function ChatPage() {
     }, []);
 
     const startNewConversation = () => {
-        fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/start-conversation/", {
+        fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/start-conversation/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -331,7 +331,7 @@ function ChatPage() {
 
                 <div style={styles.topControls}>
                     <div style={styles.dropdownContainer}>
-                        <label style={styles.label}>Choose Model:</label>
+                        {/* <label style={styles.label}>Choose Model:</label> */}
                         <select value={model} onChange={handleModelChange} style={styles.select}>
                             <option value="deepseek">🔹 DeepSeek (OpenRouter)</option>
                             <option value="mixtral">🔸 Mixtral (Groq)</option>
@@ -487,7 +487,7 @@ const styles = {
         alignItems: "center",
         gap: "0.5rem",
     },
-    label: { fontWeight: "bold" },
+    // label: { fontWeight: "bold" },
     select: {
         padding: "0.4rem",
         fontSize: "1rem",
