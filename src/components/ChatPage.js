@@ -3,7 +3,8 @@ import { getToken, removeToken, fetchUserProfile } from "../utils/auth";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FaBars, FaTimes, FaSignOutAlt, FaCopy } from "react-icons/fa";
+import { FaBars, FaTimes, FaSignOutAlt, FaCopy, FaArrowDown } from "react-icons/fa";
+import { ImSpinner8 } from "react-icons/im";
 
 function CodeBlockWithCopyButton({ code }) {
     const [copied, setCopied] = useState(false);
@@ -48,13 +49,16 @@ function ChatPage() {
     const [input, setInput] = useState("");
     const [conversationId, setConversationId] = useState(null);
     const [conversations, setConversations] = useState([]);
-    const [model, setModel] = useState("deepseek");
+    const [model, setModel] = useState("mixtral");
     const [userName, setUserName] = useState("");
     const [showMenu, setShowMenu] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [loadingConversation, setLoadingConversation] = useState(null);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
     const menuRef = useRef(null);
     const chatEndRef = useRef(null);
+    const chatBoxRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -94,6 +98,25 @@ function ChatPage() {
             });
     }, []);
 
+    // Handle scroll events to show/hide scroll-to-bottom button
+    useEffect(() => {
+        const chatBox = chatBoxRef.current;
+        if (!chatBox) return;
+
+        const handleScroll = () => {
+            const { scrollTop, scrollHeight, clientHeight } = chatBox;
+            const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+            setShowScrollToBottom(!isNearBottom);
+        };
+
+        chatBox.addEventListener('scroll', handleScroll);
+        return () => chatBox.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     const startNewConversation = () => {
         fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/start-conversation/", {
             method: "POST",
@@ -110,7 +133,7 @@ function ChatPage() {
                     {
                         id: data.conversation_id,
                         started_at: new Date().toISOString(),
-                        title: data.title || `Chat - ${new Date().toLocaleString()}`
+                        title: data.title || `${new Date().toLocaleString()}`
                     },
                     ...prev,
                 ]);
@@ -119,6 +142,9 @@ function ChatPage() {
     };
 
     const loadMessages = (convId) => {
+        if (conversationId === convId) return; // Don't reload if already viewing this conversation
+
+        setLoadingConversation(convId);
         setConversationId(convId);
         fetch(`https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/get-messages/${convId}/`, {
             headers: {
@@ -129,7 +155,12 @@ function ChatPage() {
             .then((data) => {
                 const loaded = data.map((m) => ({ sender: m.sender, text: m.content }));
                 setMessages(loaded);
+                setLoadingConversation(null);
                 if (isMobile) setSidebarOpen(false);
+                setTimeout(scrollToBottom, 100); // Scroll after messages are loaded
+            })
+            .catch(() => {
+                setLoadingConversation(null);
             });
     };
 
@@ -192,7 +223,7 @@ function ChatPage() {
                 });
                 const data = await res.json();
                 const newId = data.conversation_id;
-                const newTitle = `Chat - ${new Date().toLocaleString()}`;
+                const newTitle = `${new Date().toLocaleString()}`;
 
                 setConversationId(newId);
                 setMessages([newUserMessage]);
@@ -208,7 +239,7 @@ function ChatPage() {
     };
 
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        scrollToBottom();
     }, [messages]);
 
     useEffect(() => {
@@ -261,7 +292,7 @@ function ChatPage() {
             {/* Sidebar */}
             <div style={{
                 ...styles.sidebar,
-                width: isMobile ? "250px" : "230px",
+                width: isMobile ? "250px" : "290px",
                 transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
                 position: isMobile ? "absolute" : "relative",
                 zIndex: 1000,
@@ -287,9 +318,21 @@ function ChatPage() {
                             }}
                         >
                             <span
-                                onClick={() => loadMessages(conv.id)}
-                                style={{ flexGrow: 1, cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}
+                                onClick={() => conv.id !== conversationId && loadMessages(conv.id)}
+                                style={{
+                                    flexGrow: 1,
+                                    cursor: conv.id === conversationId ? "default" : "pointer",
+                                    overflow: "hidden",
+                                    whiteSpace: "nowrap",
+                                    textOverflow: "ellipsis",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px"
+                                }}
                             >
+                                {loadingConversation === conv.id && (
+                                    <ImSpinner8 className="spin" style={{ fontSize: "0.8rem" }} />
+                                )}
                                 {conv.title}
                             </span>
                             <button
@@ -318,7 +361,7 @@ function ChatPage() {
                 marginLeft: !isMobile && sidebarOpen ? "0px" : "0",
                 width: !isMobile && sidebarOpen ? "calc(100% - 200px)" : "100%",
                 transition: "margin-left 0.3s ease, width 0.3s ease",
-                height: "inherit",
+                height: "initial",
             }}>
                 <div style={styles.header}>
                     {!sidebarOpen && (
@@ -333,8 +376,8 @@ function ChatPage() {
                     <div style={styles.dropdownContainer}>
                         {/* <label style={styles.label}>Choose Model:</label> */}
                         <select value={model} onChange={handleModelChange} style={styles.select}>
-                            <option value="deepseek">🔹 DeepSeek (OpenRouter)</option>
                             <option value="mixtral">🔸 Mixtral (Groq)</option>
+                            <option value="deepseek">🔹 DeepSeek (OpenRouter)</option>
                             <option value="groq-chat-two">🔸 Groq Second</option>
                         </select>
                     </div>
@@ -351,7 +394,11 @@ function ChatPage() {
                         )}
                     </div>
                 </div>
-                <div onClick={() => isMobile && setSidebarOpen(false)} style={styles.chatBox}>
+                <div
+                    ref={chatBoxRef}
+                    onClick={() => isMobile && setSidebarOpen(false)}
+                    style={styles.chatBox}
+                >
                     {messages.map((msg, i) => (
                         <div key={i} style={{
                             ...styles.message,
@@ -380,7 +427,6 @@ function ChatPage() {
                             ...styles.message,
                             alignSelf: "flex-start",
                             backgroundColor: "#f5f5f5",
-                            // fontStyle: "italic",
                             opacity: 0.7,
                         }}>
                             🤖 Saran AI is typing...
@@ -388,6 +434,17 @@ function ChatPage() {
                     )}
 
                     <div ref={chatEndRef} />
+
+                    {/* Scroll to bottom button */}
+                    {showScrollToBottom && (
+                        <button
+                            onClick={scrollToBottom}
+                            style={styles.scrollToBottomButton}
+                            title="Scroll to bottom"
+                        >
+                            <FaArrowDown />
+                        </button>
+                    )}
                 </div>
 
 
@@ -418,7 +475,6 @@ const styles = {
         borderRight: "1px solid #ccc",
         padding: "1rem",
         backgroundColor: "#f9f9f9",
-        // overflowY: "auto",
         transition: "transform 0.3s ease",
     },
     sidebarHeader: {
@@ -455,7 +511,7 @@ const styles = {
         alignItems: "center",
         gap: "1rem",
         marginBottom: "1rem",
-        position: "relative",  // Add this
+        position: "relative",
         paddingLeft: "40px",
         justifyContent: "center",
     },
@@ -465,8 +521,8 @@ const styles = {
         fontSize: "1.5rem",
         cursor: "pointer",
         padding: "0.25rem",
-        position: "fixed",  // Add this
-        left: "10px",         // Add this
+        position: "fixed",
+        left: "10px",
         top: "10px",
     },
     closeSidebarButton: {
@@ -479,7 +535,7 @@ const styles = {
     },
     heading: {
         color: "#333",
-        fontSize: "1.8rem",
+        fontSize: "1.4rem",
         margin: 0,
     },
     dropdownContainer: {
@@ -487,7 +543,6 @@ const styles = {
         alignItems: "center",
         gap: "0.5rem",
     },
-    // label: { fontWeight: "bold" },
     select: {
         padding: "0.4rem",
         fontSize: "1rem",
@@ -510,6 +565,7 @@ const styles = {
         flexDirection: "column",
         gap: "0.5rem",
         overflowY: "auto",
+        position: "relative",
     },
     message: {
         padding: "0.7rem 1rem",
@@ -576,6 +632,30 @@ const styles = {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+    },
+    scrollToBottomButton: {
+        position: "fixed",
+        bottom: "130px",
+        right: "30px",
+        backgroundColor: "#007bff",
+        color: "white",
+        border: "none",
+        borderRadius: "50%",
+        width: "40px",
+        height: "40px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+        zIndex: 100,
+    },
+    "@keyframes spin": {
+        from: { transform: "rotate(0deg)" },
+        to: { transform: "rotate(360deg)" },
+    },
+    spin: {
+        animation: "$spin 1s linear infinite",
     },
 };
 
