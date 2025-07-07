@@ -1,87 +1,103 @@
-import React, { useState, useEffect, useRef } from "react";
-import { getToken, removeToken, fetchUserProfile } from "../utils/auth";
-import { useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { FaBars, FaTimes, FaSignOutAlt, FaCopy, FaArrowDown } from "react-icons/fa";
-import { ImSpinner8 } from "react-icons/im";
+"use client"
 
-function CodeBlockWithCopyButton({ code }) {
-    const [copied, setCopied] = useState(false);
+import { useState, useEffect, useRef } from "react"
+import React from "react"
+import { getToken, removeToken, fetchUserProfile } from "../utils/auth"
+import { useNavigate } from "react-router-dom"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { FaBars, FaTimes, FaSignOutAlt, FaCopy, FaArrowDown } from "react-icons/fa"
+import { ImSpinner8 } from "react-icons/im"
+
+
+function CodeBlockWithCopyButton({ code, className }) {
+    const [copied, setCopied] = useState(false)
+
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(code);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
+            await navigator.clipboard.writeText(code)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
         } catch (err) {
-            console.error("Copy failed:", err);
+            console.error("Copy failed:", err)
         }
-    };
+    }
+
     return (
-        <div style={{ position: "relative", margin: "0.25rem 0" }}>
-            <pre style={{ background: "#eee", padding: "10px", borderRadius: "8px", overflowX: "auto" }}>
+        <div className={`relative my-4 ${className || ''}`}>
+            <pre className="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-100 p-3 rounded-lg overflow-x-auto text-sm font-mono">
                 <code>{code}</code>
             </pre>
             <button
                 onClick={handleCopy}
-                style={{
-                    position: "absolute",
-                    top: "6px",
-                    right: "6px",
-                    fontSize: "0.8rem",
-                    padding: "4px 8px",
-                    border: "none",
-                    background: "#007bff",
-                    color: "white",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                }}
+                className="absolute top-2 right-2 text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
-                {copied ? <FaCopy color="green" /> : <FaCopy />}
+                {copied ? <FaCopy className="text-green-400" /> : <FaCopy />}
             </button>
         </div>
-    );
+    )
 }
 
 function ChatPage() {
-    const [messages, setMessages] = useState([]);
-    const [botTyping, setBotTyping] = useState(false);
-    const [input, setInput] = useState("");
-    const [conversationId, setConversationId] = useState(null);
-    const [conversations, setConversations] = useState([]);
-    const [model, setModel] = useState("mixtral");
-    const [userName, setUserName] = useState("");
-    const [showMenu, setShowMenu] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const [loadingConversation, setLoadingConversation] = useState(null);
-    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-    const menuRef = useRef(null);
-    const chatEndRef = useRef(null);
-    const chatBoxRef = useRef(null);
-    const navigate = useNavigate();
+    const [messages, setMessages] = useState([])
+    const [botTyping, setBotTyping] = useState(false)
+    const [input, setInput] = useState("")
+    const [conversationId, setConversationId] = useState(null)
+    const [conversations, setConversations] = useState([])
+    const [model, setModel] = useState("mixtral")
+    const [userName, setUserName] = useState("")
+    const [showMenu, setShowMenu] = useState(false)
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768)
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+    const [loadingConversation, setLoadingConversation] = useState(null)
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false)
+
+    const menuRef = useRef(null)
+    const chatEndRef = useRef(null)
+    const chatBoxRef = useRef(null)
+    const navigate = useNavigate()
+
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        // check saved preference or system preference
+        const saved = localStorage.getItem("theme")
+        return saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    }) // to make the default dark mode, we have 
+
+    useEffect(() => {
+        const root = document.documentElement
+        if (isDarkMode) {
+            root.classList.add("dark")
+            localStorage.setItem("theme", "dark")
+        } else {
+            root.classList.remove("dark")
+            localStorage.setItem("theme", "light")
+        }
+    }, [isDarkMode])
+
+    const toggleTheme = () => {
+        setIsDarkMode(!isDarkMode)
+    }
+
 
     useEffect(() => {
         const handleResize = () => {
-            const mobile = window.innerWidth < 768;
-            setIsMobile(mobile);
-            // On larger screens, default to open sidebar
+            const mobile = window.innerWidth < 768
+            setIsMobile(mobile)
             if (!mobile && !sidebarOpen) {
-                setSidebarOpen(true);
+                setSidebarOpen(true)
             }
-        };
-
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [sidebarOpen]);
+        }
+        window.addEventListener("resize", handleResize)
+        return () => window.removeEventListener("resize", handleResize)
+    }, [sidebarOpen])
 
     useEffect(() => {
         const loadUser = async () => {
-            const user = await fetchUserProfile();
-            if (user) setUserName(user.username);
-        };
-        loadUser();
-    }, []);
+            const user = await fetchUserProfile()
+            if (user) setUserName(user.username)
+        }
+        loadUser()
+    }, [])
 
     useEffect(() => {
         fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/get-conversations/", {
@@ -92,30 +108,29 @@ function ChatPage() {
         })
             .then((res) => res.json())
             .then((data) => {
-                setConversations(data);
-                setConversationId(null);
-                setMessages([]);
-            });
-    }, []);
+                setConversations(data)
+                setConversationId(null)
+                setMessages([])
+            })
+    }, [])
 
-    // Handle scroll events to show/hide scroll-to-bottom button
     useEffect(() => {
-        const chatBox = chatBoxRef.current;
-        if (!chatBox) return;
+        const chatBox = chatBoxRef.current
+        if (!chatBox) return
 
         const handleScroll = () => {
-            const { scrollTop, scrollHeight, clientHeight } = chatBox;
-            const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
-            setShowScrollToBottom(!isNearBottom);
-        };
+            const { scrollTop, scrollHeight, clientHeight } = chatBox
+            const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100
+            setShowScrollToBottom(!isNearBottom)
+        }
 
-        chatBox.addEventListener('scroll', handleScroll);
-        return () => chatBox.removeEventListener('scroll', handleScroll);
-    }, []);
+        chatBox.addEventListener("scroll", handleScroll)
+        return () => chatBox.removeEventListener("scroll", handleScroll)
+    }, [])
 
     const scrollToBottom = () => {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
 
     const startNewConversation = () => {
         fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/start-conversation/", {
@@ -127,25 +142,25 @@ function ChatPage() {
         })
             .then((res) => res.json())
             .then((data) => {
-                setConversationId(data.conversation_id);
-                setMessages([]);
+                setConversationId(data.conversation_id)
+                setMessages([])
                 setConversations((prev) => [
                     {
                         id: data.conversation_id,
                         started_at: new Date().toISOString(),
-                        title: data.title || `${new Date().toLocaleString()}`
+                        title: data.title || `Chat - ${new Date().toLocaleString()}`,
                     },
                     ...prev,
-                ]);
-                if (isMobile) setSidebarOpen(false);
-            });
-    };
+                ])
+                if (isMobile) setSidebarOpen(false)
+            })
+    }
 
     const loadMessages = (convId) => {
-        if (conversationId === convId) return; // Don't reload if already viewing this conversation
+        if (conversationId === convId) return
+        setLoadingConversation(convId)
+        setConversationId(convId)
 
-        setLoadingConversation(convId);
-        setConversationId(convId);
         fetch(`https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/get-messages/${convId}/`, {
             headers: {
                 Authorization: `Token ${getToken()}`,
@@ -153,38 +168,43 @@ function ChatPage() {
         })
             .then((res) => res.json())
             .then((data) => {
-                const loaded = data.map((m) => ({ sender: m.sender, text: m.content }));
-                setMessages(loaded);
-                setLoadingConversation(null);
-                if (isMobile) setSidebarOpen(false);
-                setTimeout(scrollToBottom, 100); // Scroll after messages are loaded
+                const loaded = data.map((m) => ({ sender: m.sender, text: m.content }))
+                setMessages(loaded)
+                setLoadingConversation(null)
+                if (isMobile) setSidebarOpen(false)
+                setTimeout(scrollToBottom, 100)
             })
             .catch(() => {
-                setLoadingConversation(null);
-            });
-    };
+                setLoadingConversation(null)
+            })
+    }
 
     const handleSend = async () => {
-        if (!input.trim()) return;
+        if (!input.trim()) return
 
-        const newUserMessage = { sender: "user", text: input };
-        setMessages((prev) => [...prev, newUserMessage]);
-        setInput("");
-        setBotTyping(true);
+        const newUserMessage = { sender: "user", text: input }
+        setMessages((prev) => [...prev, newUserMessage])
+        setInput("")
+        setBotTyping(true)
+
         const sendMessage = (convId) => {
-            const endpoint = model === "deepseek"
-                ? "https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/chat/"
-                : model === "graq-chat-two"
-                    ? "https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/graq-chat-two/"
-                    : "https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/groq-chat/";
+            const endpoint =
+                model === "deepseek"
+                    ? "https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/chat/"
+                    : model === "graq-chat-two"
+                        ? "https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/graq-chat-two/"
+                        : "https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/groq-chat/"
+
             const messageHistory = messages.map((msg) => ({
                 role: msg.sender === "user" ? "user" : "assistant",
                 content: msg.text,
-            }));
+            }))
+
             messageHistory.push({
                 role: "user",
                 content: input,
-            });
+            })
+
             fetch(endpoint, {
                 method: "POST",
                 headers: {
@@ -198,19 +218,19 @@ function ChatPage() {
                     const botReply = {
                         sender: "bot",
                         text: data.reply || "🤖 (Sorry, something went wrong. Try again.)",
-                    };
-                    setMessages((prev) => [...prev, botReply]);
-                    setBotTyping(false);
+                    }
+                    setMessages((prev) => [...prev, botReply])
+                    setBotTyping(false)
                 })
                 .catch((error) => {
                     const errorMsg = {
                         sender: "bot",
                         text: "❌ Error: " + error.message,
-                    };
-                    setMessages((prev) => [...prev, errorMsg]);
-                    setBotTyping(false);
-                });
-        };
+                    }
+                    setMessages((prev) => [...prev, errorMsg])
+                    setBotTyping(false)
+                })
+        }
 
         if (!conversationId) {
             try {
@@ -220,52 +240,52 @@ function ChatPage() {
                         "Content-Type": "application/json",
                         Authorization: `Token ${getToken()}`,
                     },
-                });
-                const data = await res.json();
-                const newId = data.conversation_id;
-                const newTitle = `${new Date().toLocaleString()}`;
-
-                setConversationId(newId);
-                setMessages([newUserMessage]);
-                setConversations((prev) => [{ id: newId, started_at: new Date().toISOString(), title: newTitle }, ...prev]);
-
-                sendMessage(newId);
+                })
+                const data = await res.json()
+                const newId = data.conversation_id
+                const newTitle = `Chat - ${new Date().toLocaleString()}`
+                setConversationId(newId)
+                setMessages([newUserMessage])
+                setConversations((prev) => [{ id: newId, started_at: new Date().toISOString(), title: newTitle }, ...prev])
+                sendMessage(newId)
             } catch (error) {
-                console.error("Failed to create new conversation:", error);
+                console.error("Failed to create new conversation:", error)
             }
         } else {
-            sendMessage(conversationId);
+            sendMessage(conversationId)
         }
-    };
+    }
 
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        scrollToBottom()
+    }, [messages])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setShowMenu(false);
+                setShowMenu(false)
             }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+        }
+        document.addEventListener("mousedown", handleClickOutside)
+        return () => document.removeEventListener("mousedown", handleClickOutside)
+    }, [])
 
     const handleModelChange = (e) => {
-        setModel(e.target.value);
-    };
+        setModel(e.target.value)
+    }
 
     const handleLogout = () => {
-        removeToken();
-        navigate("/");
-    };
+        removeToken()
+        navigate("/")
+    }
 
     const toggleSidebar = () => {
-        setSidebarOpen(!sidebarOpen);
-    };
+        setSidebarOpen(!sidebarOpen)
+    }
+
     const handleDelete = (convId) => {
-        if (!window.confirm("Are you sure you want to delete this conversation?")) return;
+        if (!window.confirm("Are you sure you want to delete this conversation?")) return
+
         fetch(`https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/delete-conversation/${convId}/`, {
             method: "DELETE",
             headers: {
@@ -274,389 +294,286 @@ function ChatPage() {
         })
             .then((res) => {
                 if (res.ok) {
-                    setConversations((prev) => prev.filter((c) => c.id !== convId));
+                    setConversations((prev) => prev.filter((c) => c.id !== convId))
                     if (conversationId === convId) {
-                        setConversationId(null);
-                        setMessages([]);
+                        setConversationId(null)
+                        setMessages([])
                     }
                 } else {
-                    console.error("Failed to delete conversation");
+                    console.error("Failed to delete conversation")
                 }
             })
-            .catch((err) => console.error("Error:", err));
-    };
-
+            .catch((err) => console.error("Error:", err))
+    }
 
     return (
-        <div style={{ display: "flex", height: "92vh", position: "relative" }}>
+        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+            {/* Mobile Overlay */}
+            {isMobile && sidebarOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setSidebarOpen(false)} />
+            )}
+
             {/* Sidebar */}
-            <div style={{
-                ...styles.sidebar,
-                width: isMobile ? "250px" : "290px",
-                transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-                position: isMobile ? "absolute" : "relative",
-                zIndex: 1000,
-                height: "100%",
-            }}>
-                <div style={styles.sidebarHeader}>
-                    <h3>💬 Chats</h3>
-                    <button onClick={toggleSidebar} style={styles.closeSidebarButton}>
-                        <FaTimes />
+            <div
+                className={`
+                ${isMobile ? "fixed" : "relative"} 
+                +   h-full max-h-screen
+                ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+                bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
+                transition-transform duration-300 ease-in-out z-50 flex flex-col
+                shadow-lg ${isMobile ? "shadow-2xl" : ""}
+            `}
+                style={{ minWidth: "270px", width: isMobile ? "80vw" : "270px" }}
+            >
+                {/* Sidebar Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-white">💬 Saran AI Chat</h3>
+                    </div>
+                    <button onClick={toggleSidebar} className="text-white hover:bg-white/20 p-1 rounded transition-colors">
+                        <FaTimes className="w-4 h-4" />
+                    </button>
+
+                </div>
+
+                {/* New Chat Button */}
+                <div className="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                    <button
+                        onClick={startNewConversation}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-md"
+                    >
+                        ✨ New Chat
                     </button>
                 </div>
-                <button onClick={startNewConversation} style={styles.newChatBtn}>+ New Chat</button>
-                <div style={styles.conversationList}>
-                    {conversations.map((conv) => (
-                        <div
-                            key={conv.id}
-                            style={{
-                                ...styles.chatItem,
-                                backgroundColor: conv.id === conversationId ? "#cce5ff" : "#f1f1f1",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                            }}
-                        >
-                            <span
-                                onClick={() => conv.id !== conversationId && loadMessages(conv.id)}
-                                style={{
-                                    flexGrow: 1,
-                                    cursor: conv.id === conversationId ? "default" : "pointer",
-                                    overflow: "hidden",
-                                    whiteSpace: "nowrap",
-                                    textOverflow: "ellipsis",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px"
-                                }}
-                            >
-                                {loadingConversation === conv.id && (
-                                    <ImSpinner8 className="spin" style={{ fontSize: "0.8rem" }} />
-                                )}
-                                {conv.title}
-                            </span>
-                            <button
-                                onClick={() => handleDelete(conv.id)}
-                                style={{
-                                    marginLeft: "10px",
-                                    background: "none",
-                                    border: "none",
-                                    color: "red",
-                                    cursor: "pointer",
-                                    fontSize: "1rem",
-                                }}
-                                title="Delete"
-                            >
-                                🗑️
-                            </button>
-                        </div>
-                    ))}
 
+                {/* Conversations List */}
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                    <div className="space-y-2">
+                        {conversations.map((conv) => (
+                            <div
+                                key={conv.id}
+                                className={`
+                                    group relative p-3 rounded-lg cursor-pointer transition-all duration-200
+                                    ${conv.id === conversationId
+                                        ? "bg-blue-50 border-2 border-blue-200 shadow-sm"
+                                        : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-400 dark:border-gray-600"
+                                    }
+                                `}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span
+                                        onClick={() => conv.id !== conversationId && loadMessages(conv.id)}
+                                        className={`
+                                            flex-1 text-sm font-medium truncate pr-2
+                                            ${conv.id === conversationId ? "text-blue-700" : "text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400"}
+                                            ${conv.id !== conversationId ? "hover:text-blue-600" : ""}
+                                        `}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {loadingConversation === conv.id && <ImSpinner8 className="animate-spin text-blue-500 w-3 h-3" />}
+                                            <span className="truncate">{conv.title}</span>
+                                        </div>
+                                    </span>
+                                    <button
+                                        onClick={() => handleDelete(conv.id)}
+                                        className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-all duration-200"
+                                        title="Delete conversation"
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div style={{
-                ...styles.container,
-                marginLeft: !isMobile && sidebarOpen ? "0px" : "0",
-                width: !isMobile && sidebarOpen ? "calc(100% - 200px)" : "100%",
-                transition: "margin-left 0.3s ease, width 0.3s ease",
-                height: "initial",
-            }}>
-                <div style={styles.header}>
-                    {!sidebarOpen && (
-                        <button onClick={toggleSidebar} style={styles.menuButton}>
-                            <FaBars />
-                        </button>
-                    )}
-                    <h2 style={styles.heading}>Saran AI Chat</h2>
-                </div>
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Header */}
+                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            {!sidebarOpen && (
+                                <>
+                                    <button
+                                        onClick={toggleTheme}
+                                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                        title="Toggle Dark/Light Mode"
+                                    >
+                                        {isDarkMode ? "☀️" : "🌙"}
+                                    </button>
 
-                <div style={styles.topControls}>
-                    <div style={styles.dropdownContainer}>
-                        {/* <label style={styles.label}>Choose Model:</label> */}
-                        <select value={model} onChange={handleModelChange} style={styles.select}>
-                            <option value="mixtral">🔸 Mixtral (Groq)</option>
-                            <option value="deepseek">🔹 DeepSeek (OpenRouter)</option>
-                            <option value="groq-chat-two">🔸 Groq Second</option>
-                        </select>
-                    </div>
+                                    <button
+                                        onClick={toggleSidebar}
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <FaBars className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                    </button>
+                                    {!isMobile && (
+                                        <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                            Saran AI Chat
+                                        </h1>
+                                    )}
+                                </>
+                            )}
+                        </div>
 
-                    <div style={styles.menuWrapper} ref={menuRef}>
-                        <button onClick={() => setShowMenu(!showMenu)} style={styles.dotsButton} title="Options">⋮</button>
-                        {showMenu && (
-                            <div style={styles.dropdownMenu}>
-                                <p style={{ margin: 0, fontWeight: "bold" }}>{userName}</p>
-                                <button onClick={handleLogout} style={styles.logoutButton}>
-                                    <FaSignOutAlt style={{ marginRight: "5px" }} /> Logout
+                        {/* Controls */}
+                        <div className="flex items-center gap-3">
+                            {/* Model Selector */}
+                            <select
+                                value={model}
+                                onChange={handleModelChange}
+                                className="py-2 border border-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder:dark:text-gray-400 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                            >
+                                <option value="mixtral">🔸 Mixtral (Groq)</option>
+                                <option value="deepseek">🔹 DeepSeek (OpenRouter)</option>
+                                <option value="groq-chat-two">🔸 Groq Second</option>
+                            </select>
+
+                            {/* User Menu */}
+                            <div className="relative" ref={menuRef}>
+                                <button
+                                    onClick={() => setShowMenu(!showMenu)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                                    title="User menu"
+                                >
+                                    <span className="text-lg">⋮</span>
                                 </button>
+
+
+                                {showMenu && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border border-gray-200 rounded-lg shadow-lg z-50">
+                                        <div className="p-3 border-b border-gray-100">
+                                            <p className="font-medium text-gray-800 truncate dark:text-gray-200">{userName}</p>
+                                        </div>
+                                        <div className="p-2">
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10 rounded-md transition-colors"
+                                            >
+                                                <FaSignOutAlt className="w-4 h-4" />
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
+
+                {/* Chat Area */}
                 <div
                     ref={chatBoxRef}
+                    className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900"
                     onClick={() => isMobile && setSidebarOpen(false)}
-                    style={styles.chatBox}
                 >
                     {messages.map((msg, i) => (
-                        <div key={i} style={{
-                            ...styles.message,
-                            alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                            backgroundColor: msg.sender === "user" ? "#d1e7dd" : "#f5f5f5",
-                        }}>
-                            <ReactMarkdown
-                                children={msg.text}
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    p: ({ children }) => <p style={{ margin: "0 0 0.3rem 0" }}>{children}</p>,
-                                    code({ inline, children }) {
-                                        const codeText = String(children).trim();
-                                        return inline ? (
-                                            <code style={{ background: "#eee", padding: "2px 6px", borderRadius: "4px" }}>{children}</code>
-                                        ) : <CodeBlockWithCopyButton code={codeText} />;
-                                    },
-                                }}
-                            />
+                        <div key={i} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                            <div
+                                className={`
+                                max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] p-4 rounded-2xl shadow-sm
+                                ${msg.sender === "user"
+                                        ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white ml-auto"
+                                        : "bg-white border border-gray-400 text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                                    }
+                            `}
+                            >
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        p: ({ node, children, ...props }) => {
+                                            if (node.children.some(child => child.tagName === "pre" || child.tagName === "code")) {
+                                                return <>{children}</>
+                                            }
+                                            return <p className="mb-2 last:mb-0" {...props}>{children}</p>
+                                        },
+                                        code: ({ node, inline, className, children, ...props }) => {
+                                            if (inline) {
+                                                return (
+                                                    <code className={className} {...props}>
+                                                        {children}
+                                                    </code>
+                                                )
+                                            }
+
+                                            return (
+                                                <CodeBlockWithCopyButton
+                                                    code={String(children).trim()}
+                                                    className={className}
+                                                />
+                                            )
+                                        },
+                                    }}
+                                >
+                                    {msg.text}
+                                </ReactMarkdown>
+
+                            </div>
                         </div>
                     ))}
 
                     {/* Typing Indicator */}
                     {botTyping && (
-                        <div style={{
-                            ...styles.message,
-                            alignSelf: "flex-start",
-                            backgroundColor: "#f5f5f5",
-                            opacity: 0.7,
-                        }}>
-                            🤖 Saran AI is typing...
+                        <div className="flex justify-start">
+                            <div className="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm max-w-xs dark:bg-gray-800 dark:border-gray-700">
+                                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                    <div className="flex gap-1">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                        <div
+                                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                            style={{ animationDelay: "0.1s" }}
+                                        ></div>
+                                        <div
+                                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                                            style={{ animationDelay: "0.2s" }}
+                                        ></div>
+                                    </div>
+                                    <span className="text-sm">Saran AI is typing...</span>
+                                </div>
+                            </div>
                         </div>
                     )}
 
                     <div ref={chatEndRef} />
-
-                    {/* Scroll to bottom button */}
-                    {showScrollToBottom && (
-                        <button
-                            onClick={scrollToBottom}
-                            style={styles.scrollToBottomButton}
-                            title="Scroll to bottom"
-                        >
-                            <FaArrowDown />
-                        </button>
-                    )}
                 </div>
 
+                {/* Scroll to Bottom Button */}
+                {showScrollToBottom && (
+                    <button
+                        onClick={scrollToBottom}
+                        className="fixed bottom-24 right-6 bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 z-30"
+                        title="Scroll to bottom"
+                    >
+                        <FaArrowDown className="w-4 h-4" />
+                    </button>
+                )}
 
-                <div style={styles.inputContainer}>
-                    <input
-                        type="text"
-                        placeholder="Type your message..."
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        style={styles.input}
-                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                    />
-                    <button onClick={handleSend} style={styles.sendButton}>➤</button>
+                {/* Input Area */}
+                <div className="bg-white border-t border-gray-200 p-4 dark:bg-gray-800 dark:border-gray-700">
+                    <div className="flex gap-3 max-w-4xl mx-auto">
+                        <input
+                            type="text"
+                            placeholder="Type your message..."
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                            className="flex-1 px-4 py-3 border border-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder:dark:text-gray-400 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200"
+                        />
+                        <button
+                            onClick={handleSend}
+                            disabled={!input.trim()}
+                            className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 disabled:from-gray-400 disabled:to-gray-400 text-white px-6 py-3 rounded-full font-medium transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-md"
+                        >
+                            ➤
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        </div >
+    )
 }
 
-const styles = {
-    container: {
-        flex: 1,
-        padding: "1rem",
-        display: "flex",
-        flexDirection: "column",
-    },
-    sidebar: {
-        borderRight: "1px solid #ccc",
-        padding: "1rem",
-        backgroundColor: "#f9f9f9",
-        transition: "transform 0.3s ease",
-    },
-    sidebarHeader: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "1rem",
-    },
-    conversationList: {
-        overflowY: "auto",
-        height: "calc(100% - 100px)",
-    },
-    chatItem: {
-        padding: "0.5rem",
-        marginBottom: "0.5rem",
-        borderRadius: "6px",
-        cursor: "pointer",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-    },
-    newChatBtn: {
-        marginBottom: "1rem",
-        padding: "0.5rem",
-        width: "100%",
-        borderRadius: "6px",
-        backgroundColor: "#007bff",
-        color: "#fff",
-        border: "none",
-        cursor: "pointer",
-    },
-    header: {
-        display: "flex",
-        alignItems: "center",
-        gap: "1rem",
-        marginBottom: "1rem",
-        position: "relative",
-        paddingLeft: "40px",
-        justifyContent: "center",
-    },
-    menuButton: {
-        background: "transparent",
-        border: "none",
-        fontSize: "1.5rem",
-        cursor: "pointer",
-        padding: "0.25rem",
-        position: "fixed",
-        left: "10px",
-        top: "10px",
-    },
-    closeSidebarButton: {
-        background: "transparent",
-        border: "none",
-        fontSize: "1.2rem",
-        cursor: "pointer",
-        padding: "0.25rem",
-        color: "#666",
-    },
-    heading: {
-        color: "#333",
-        fontSize: "1.4rem",
-        margin: 0,
-    },
-    dropdownContainer: {
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-    },
-    select: {
-        padding: "0.4rem",
-        fontSize: "1rem",
-        borderRadius: "6px",
-        border: "1px solid #ccc",
-    },
-    topControls: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "1rem",
-    },
-    chatBox: {
-        flex: 1,
-        border: "1px solid #ddd",
-        borderRadius: "10px",
-        padding: "1rem",
-        backgroundColor: "#f8f9fa",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.5rem",
-        overflowY: "auto",
-        position: "relative",
-    },
-    message: {
-        padding: "0.7rem 1rem",
-        borderRadius: "20px",
-        maxWidth: "75%",
-        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-        lineHeight: "1.4",
-        wordBreak: "break-word",
-    },
-    inputContainer: {
-        display: "flex",
-        marginTop: "1rem",
-        gap: "0.5rem",
-    },
-    input: {
-        flex: 1,
-        padding: "0.75rem",
-        borderRadius: "20px",
-        border: "1px solid #ccc",
-        fontSize: "1rem",
-        outline: "none",
-    },
-    sendButton: {
-        padding: "0.75rem 1rem",
-        borderRadius: "50%",
-        backgroundColor: "#0d6efd",
-        color: "#fff",
-        border: "none",
-        fontSize: "1rem",
-        cursor: "pointer",
-    },
-    menuWrapper: {
-        position: "relative",
-    },
-    dotsButton: {
-        background: "transparent",
-        border: "none",
-        fontSize: "1.5rem",
-        cursor: "pointer",
-        padding: "0.25rem 0.5rem",
-    },
-    dropdownMenu: {
-        position: "absolute",
-        top: "30px",
-        right: "0",
-        backgroundColor: "#fff",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        padding: "0.5rem 1rem",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-        zIndex: 1000,
-        minWidth: "150px",
-        textAlign: "left",
-    },
-    logoutButton: {
-        marginTop: "0.5rem",
-        padding: "0.4rem 0.8rem",
-        backgroundColor: "#dc3545",
-        color: "#fff",
-        border: "none",
-        borderRadius: "6px",
-        cursor: "pointer",
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    scrollToBottomButton: {
-        position: "fixed",
-        bottom: "130px",
-        right: "30px",
-        backgroundColor: "#007bff",
-        color: "white",
-        border: "none",
-        borderRadius: "50%",
-        width: "40px",
-        height: "40px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
-        zIndex: 100,
-    },
-    "@keyframes spin": {
-        from: { transform: "rotate(0deg)" },
-        to: { transform: "rotate(360deg)" },
-    },
-    spin: {
-        animation: "$spin 1s linear infinite",
-    },
-};
-
-export default ChatPage;
+export default ChatPage

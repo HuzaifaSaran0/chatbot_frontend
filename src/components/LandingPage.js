@@ -1,22 +1,46 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { isAuthenticated, removeToken } from '../utils/auth';
-import { fetchUserProfile } from '../utils/auth'; // Adjust the import based on your API utility
+// File: src/components/LandingPage.js
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Badge from "./ui/Badge";
+import Button from "./ui/Button";
+import Card from "./ui/Card";
+import CardContent from "./ui/CardContent";
+import {
+    Sparkles,
+    MessageSquare,
+    Zap,
+    LogOut,
+    Bot,
+    ArrowRight,
+} from "lucide-react";
 
-function LandingPage() {
+import { isAuthenticated, removeToken, fetchUserProfile } from "../utils/auth";
+
+export default function LandingPage() {
     const navigate = useNavigate();
     const isLoggedIn = isAuthenticated();
-    const [setShowMenu] = useState(false);
-    const [userName, setUserName] = useState('');
+    const [userName, setUserName] = useState("");
     const menuRef = useRef(null);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem("theme");
+        return saved ? saved === "dark" : true;
+    });
+
+    useEffect(() => {
+        const root = document.documentElement;
+        if (isDarkMode) {
+            root.classList.add("dark");
+            localStorage.setItem("theme", "dark");
+        } else {
+            root.classList.remove("dark");
+            localStorage.setItem("theme", "light");
+        }
+    }, [isDarkMode]);
 
     useEffect(() => {
         const loadUser = async () => {
             const user = await fetchUserProfile();
-
-            if (user) {
-                setUserName(user.username); // or user.username if you enable it
-            }
+            if (user) setUserName(user.username);
         };
         loadUser();
     }, []);
@@ -24,194 +48,160 @@ function LandingPage() {
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setShowMenu(false);
+                // optional: dropdown logic
             }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleLogout = () => {
         removeToken();
-        navigate('/');
+        navigate("/");
     };
 
     return (
-        <div style={styles.pageContainer}>
-            <h1 style={styles.title}><p style={{ margin: 0, fontWeight: 'bold' }}>Hello {userName}</p>
-                🤖 Welcome to Saran AI ChatApp</h1>
-            <p style={styles.subtitle}>A minimal and smart assistant powered by DeepSeek and Groq Mistral</p>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+            {/* Theme Toggle Button (Top-Right) */}
+            <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="fixed top-4 right-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow hover:scale-105 transition"
+                title="Toggle Theme"
+            >
+                {isDarkMode ? "☀️" : "🌙"}
+            </button>
 
-            <section style={styles.modelSection}>
-                <h2 style={styles.sectionHeading}>🚀 Supported AI Models</h2>
-                <ul style={styles.modelList}>
-                    <li><strong>DeepSeek (OpenRouter)</strong> – Fast and smart text understanding.</li>
-                    <li><strong>Groq Mixtral</strong> – Lightning-fast LLM with long context capability.</li>
-                    <li><strong>Groq Second Model</strong> – Alternate Groq model with diverse output.</li>
-                </ul>
+            <div className="container mx-auto px-4 py-16">
+                <div className="max-w-4xl mx-auto text-center">
+                    {userName && (
+                        <div className="mb-6">
+                            <Badge variant="secondary" className="px-4 py-2 text-sm">
+                                Welcome back, {userName}! 👋
+                            </Badge>
+                        </div>
+                    )}
 
-                <img src={`${process.env.PUBLIC_URL}/chat_image.PNG`} alt="AI Chat Preview" style={styles.aiImage} />
+                    <div className="mb-8">
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                            <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg">
+                                <Bot className="w-8 h-8 text-white" />
+                            </div>
+                            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                                Saran AI
+                            </h1>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
+                            Your Intelligent Chat Assistant
+                        </h2>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                            Experience the power of advanced AI with our minimal and smart assistant, powered by DeepSeek and Groq Mistral.
+                        </p>
+                    </div>
 
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+                        {!isLoggedIn ? (
+                            <>
+                                <Button onClick={() => navigate("/login")}>
+                                    <MessageSquare className="w-5 h-5 mr-2" /> Login
+                                </Button>
+                                <Button variant="outline" onClick={() => navigate("/signup")}>
+                                    Sign Up <ArrowRight className="w-5 h-5 ml-2" />
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button onClick={() => navigate("/chat")} variant="success">
+                                    <MessageSquare className="w-5 h-5 mr-2" /> Start Chatting
+                                </Button>
+                                <Button onClick={handleLogout} variant="danger">
+                                    <LogOut className="w-5 h-5 mr-2" /> Logout
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
 
-            </section>
+                <div className="max-w-6xl mx-auto">
+                    <div className="text-center mb-12">
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <Sparkles className="w-6 h-6 text-indigo-600" />
+                            <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+                                Powered by Advanced AI
+                            </h3>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 text-lg">
+                            Choose from our selection of cutting-edge AI models for the best chat experience
+                        </p>
+                    </div>
 
-            <div style={{ marginTop: '1rem' }}>
-                {!isLoggedIn ? (
-                    <>
-                        <button onClick={() => navigate('/login')} style={styles.button}>Login</button>
-                        <button onClick={() => navigate('/signup')} style={styles.button}>Sign Up</button>
-                    </>
-                ) : (
-                    <>
-                        <button onClick={() => navigate('/chat')} style={styles.button}>Go to Chat</button>
-                        <button onClick={handleLogout} style={styles.logoutButton}>Logout</button>
-                    </>
-                )}
+                    <div className="grid md:grid-cols-3 gap-8 mb-12">
+                        <Card>
+                            <CardContent>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-purple-500 rounded-xl">
+                                        <Bot className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-gray-800 dark:text-white">DeepSeek</h4>
+                                </div>
+                                <Badge className="mb-4 bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700">
+                                    OpenRouter
+                                </Badge>
+                                <p className="text-gray-600 dark:text-gray-300">
+                                    Fast and smart text understanding with advanced reasoning.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardContent>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-blue-500 rounded-xl">
+                                        <Zap className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-gray-800 dark:text-white">Groq Mixtral</h4>
+                                </div>
+                                <Badge className="mb-4 bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700">
+                                    Lightning Fast
+                                </Badge>
+                                <p className="text-gray-600 dark:text-gray-300">
+                                    Lightning-fast LLM with long context for extended conversations.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardContent>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-3 bg-emerald-500 rounded-xl">
+                                        <MessageSquare className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h4 className="text-xl font-bold text-gray-800 dark:text-white">Groq Alternative</h4>
+                                </div>
+                                <Badge className="mb-4 bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-700">
+                                    Diverse Output
+                                </Badge>
+                                <p className="text-gray-600 dark:text-gray-300">
+                                    Alternative Groq model offering creative responses.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="text-center">
+                        <img
+                            src="/chat_image.PNG"
+                            alt="AI Chat Preview"
+                            className="mx-auto w-full max-w-md rounded-3xl shadow-2xl border-4 border-white/50 dark:border-gray-700"
+                        />
+                    </div>
+                </div>
             </div>
+
+            <footer className="bg-white/50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 py-8 mt-16 text-center">
+                <p className="text-gray-600 dark:text-gray-400">
+                    © 2025 Saran AI ChatApp. Powered by advanced AI technology.
+                </p>
+            </footer>
         </div>
     );
 }
-
-const styles = {
-    pageContainer: {
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '3rem 2rem',
-        fontFamily: 'Segoe UI, sans-serif',
-        textAlign: 'center',
-    },
-    title: {
-        fontSize: '2.5rem',
-        marginBottom: '0.5rem',
-        color: '#0d6efd',
-    },
-    subtitle: {
-        fontSize: '1.2rem',
-        color: '#555',
-    },
-    sectionHeading: {
-        fontSize: '1.5rem',
-        margin: '1.5rem 0 1rem',
-        color: '#333',
-    },
-    modelSection: {
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        padding: '1.5rem',
-        marginTop: '2rem',
-    },
-    modelList: {
-        textAlign: 'left',
-        listStyleType: 'disc',
-        paddingLeft: '2rem',
-        lineHeight: '1.8',
-        color: '#444',
-    },
-    button: {
-        padding: '10px 20px',
-        margin: '0 10px',
-        backgroundColor: '#0d6efd',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontSize: '1rem',
-        boxShadow: '0 4px 10px rgba(13, 110, 253, 0.3)',
-        transition: 'all 0.2s ease-in-out',
-    },
-    buttonHover: {
-        backgroundColor: '#0a58ca',
-        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
-    },
-    logoutButton: {
-        padding: '10px 20px',
-        marginTop: '20px',
-        backgroundColor: '#dc3545',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-    },
-    heading: {
-        textAlign: "center",
-        color: "#333",
-        fontSize: "1.8rem",
-        marginBottom: "1rem",
-    },
-
-    aiImage: {
-        width: "100%",
-        maxWidth: "500px",
-        margin: "1rem auto",
-        display: "block",
-        borderRadius: "12px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-    },
-
-    topControls: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "1rem",
-    },
-
-    dropdownContainer: {
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-    },
-
-    label: {
-        fontWeight: "bold",
-    },
-
-    select: {
-        padding: "0.4rem",
-        fontSize: "1rem",
-        borderRadius: "6px",
-        border: "1px solid #ccc",
-    },
-
-    menuWrapper: {
-        position: "relative",
-    },
-
-    dotsButton: {
-        background: "transparent",
-        border: "none",
-        fontSize: "1.5rem",
-        cursor: "pointer",
-        padding: "0.2rem 0.5rem",
-    },
-
-    dropdownMenu: {
-        position: "absolute",
-        top: "30px",
-        right: "0",
-        backgroundColor: "#fff",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        padding: "0.5rem 1rem",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-        zIndex: 1000,
-        minWidth: "150px",
-        textAlign: "left",
-    },
-
-    // logoutButton: {
-    //     marginTop: "0.5rem",
-    //     padding: "0.4rem 0.8rem",
-    //     backgroundColor: "#dc3545",
-    //     color: "#fff",
-    //     border: "none",
-    //     borderRadius: "6px",
-    //     cursor: "pointer",
-    //     width: "100%",
-    // },
-
-};
-
-export default LandingPage;

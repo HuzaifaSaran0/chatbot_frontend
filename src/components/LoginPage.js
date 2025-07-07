@@ -1,49 +1,56 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { saveToken } from "../utils/auth";
-import { useGoogleLogin } from "@react-oauth/google";
+"use client"
 
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { saveToken } from "../utils/auth"
+import { useGoogleLogin } from "@react-oauth/google"
+import { Eye, EyeOff, Mail, Lock, Bot, ArrowRight } from "lucide-react"
 
 const LoginPage = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState(null);
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false); // ⬅️ Add this state
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [error, setError] = useState(null)
+    const [loading, setLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem("theme")
+        return saved ? saved === "dark" : true
+    })
+
+    const navigate = useNavigate()
 
     useEffect(() => {
-        const styleSheet = document.createElement("style");
-        styleSheet.type = "text/css";
-        styleSheet.innerText = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        const root = document.documentElement
+        if (isDarkMode) {
+            root.classList.add("dark")
+            localStorage.setItem("theme", "dark")
+        } else {
+            root.classList.remove("dark")
+            localStorage.setItem("theme", "light")
         }
-    `;
-        document.head.appendChild(styleSheet);
-    }, []);
+    }, [isDarkMode])
 
     const handleLogin = async (e) => {
-        e.preventDefault();
-        setError(null);
-        setLoading(true);
+        e.preventDefault()
+        setError(null)
+        setLoading(true)
 
         const res = await fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/auth/login/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
-        });
+        })
 
-        const data = await res.json();
+        const data = await res.json()
 
         if (res.ok && data.key) {
-            saveToken(data.key);
-            navigate("/chat");
+            saveToken(data.key)
+            navigate("/chat")
         } else {
-            setError("Invalid credentials or error occurred.");
-            setLoading(false);
+            setError("Invalid credentials or error occurred.")
+            setLoading(false)
         }
-    };
+    }
 
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -51,202 +58,177 @@ const LoginPage = () => {
                 const res = await fetch("https://saran-chatbot-1c9368cfddbc.herokuapp.com/api/auth/google/", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        access_token: tokenResponse.access_token,
-                    }),
-                });
+                    body: JSON.stringify({ access_token: tokenResponse.access_token }),
+                })
 
-                const data = await res.json();
+                const data = await res.json()
 
                 if (res.ok && data.key) {
-                    saveToken(data.key);
-                    navigate("/chat");
+                    saveToken(data.key)
+                    navigate("/chat")
                 } else {
-                    console.error("Google login failed:", data);
-                    setError("Google login failed");
+                    console.error("Google login failed:", data)
+                    setError("Google login failed")
                 }
             } catch (err) {
-                console.error(err);
-                setError("Network error");
+                console.error(err)
+                setError("Network error")
             } finally {
-                setLoading(false); // ⬅️ Reset loading state
+                setLoading(false)
             }
         },
         onError: () => {
-            console.error("Google Login Failed");
-            setError("Google login failed");
+            console.error("Google Login Failed")
+            setError("Google login failed")
         },
         flow: "implicit",
-    });
+    })
 
     return (
-        <div style={styles.wrapper}>
-            <div style={styles.card}>
-                <h2 style={styles.heading}>Welcome Back</h2>
-                <p style={styles.subHeading}>Login to continue chatting</p>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 flex items-center justify-center p-4 relative transition-colors duration-300">
+            {/* Theme Toggle Button */}
+            <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="fixed top-4 right-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow hover:scale-105 transition"
+                title="Toggle Theme"
+            >
+                {isDarkMode ? "☀️" : "🌙"}
+            </button>
 
-                <form onSubmit={handleLogin} style={styles.form}>
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        style={styles.input}
-                    />
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        style={styles.input}
-                    />
-                    <button type="submit" style={styles.primaryButton} disabled={loading}>
-                        {loading ? (
-                            <>
-                                <span style={styles.spinner}></span> Logging in...
-                            </>
-                        ) : (
-                            "Login"
-                        )}
-                    </button>
+            {/* Background Pattern */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full opacity-10 blur-3xl"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-10 blur-3xl"></div>
+            </div>
 
-
-                </form>
-
-                <div style={styles.divider}>or</div>
-                <div style={styles.googleButtonContainer}>
-                    <button onClick={() => login()} style={styles.googleButton}>
-                        <img
-                            src="https://www.svgrepo.com/show/475656/google-color.svg"
-                            alt="Google"
-                            style={{ width: "20px", marginRight: "10px" }}
-                        />
-                        Continue with Google
-                    </button>
+            <div className="relative w-full max-w-md">
+                {/* Logo/Brand Section */}
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg mb-4">
+                        <Bot className="w-8 h-8 text-white" />
+                    </div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        Saran AI
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-300 mt-2">
+                        Your Intelligent Chat Assistant
+                    </p>
                 </div>
 
-                {error && <p style={styles.error}>{error}</p>}
-                <p style={styles.switchText}>
-                    Don’t have an account?{" "}
-                    <span style={styles.link} onClick={() => navigate("/signup")}>
-                        Sign up
-                    </span>
-                </p>
+                {/* Login Card */}
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 dark:border-gray-700 p-8">
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+                            Welcome Back!
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300">
+                            Sign in to continue your AI conversations
+                        </p>
+                    </div>
+
+                    {/* Login Form */}
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Mail className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+                            />
+                        </div>
+
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Lock className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="w-full pl-12 pr-12 py-4 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            >
+                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Signing in...
+                                </>
+                            ) : (
+                                <>
+                                    Sign In
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    <div className="relative my-8">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
+                                Or continue with
+                            </span>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => login()}
+                        disabled={loading}
+                        className="w-full bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 py-4 px-6 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-md hover:shadow-lg flex items-center justify-center gap-3"
+                    >
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+                        Continue with Google
+                    </button>
+
+                    <div className="text-center mt-8">
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Don't have an account?{" "}
+                            <button
+                                onClick={() => navigate("/signup")}
+                                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold hover:underline transition-colors"
+                            >
+                                Create one here
+                            </button>
+                        </p>
+                    </div>
+                </div>
+
+                <div className="text-center mt-8">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        By signing in, you agree to our Terms of Service and Privacy Policy
+                    </p>
+                </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
-const styles = {
-    wrapper: {
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f8f9fa",
-    },
-    card: {
-        backgroundColor: "#fff",
-        padding: "2.5rem",
-        borderRadius: "12px",
-        boxShadow: "0 6px 20px rgba(0, 0, 0, 0.1)",
-        width: "100%",
-        maxWidth: "400px",
-    },
-    heading: {
-        marginBottom: "0.5rem",
-        fontSize: "1.8rem",
-        fontWeight: "600",
-        textAlign: "center",
-        color: "#343a40",
-    },
-    subHeading: {
-        marginBottom: "1.5rem",
-        fontSize: "1rem",
-        textAlign: "center",
-        color: "#6c757d",
-    },
-    form: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-    },
-    input: {
-        padding: "0.75rem",
-        borderRadius: "8px",
-        border: "1px solid #ced4da",
-        fontSize: "1rem",
-    },
-    primaryButton: {
-        padding: "0.75rem",
-        backgroundColor: "#198754",
-        color: "#fff",
-        border: "none",
-        borderRadius: "8px",
-        fontWeight: "bold",
-        cursor: "pointer",
-        fontSize: "1rem",
-        transition: "background-color 0.3s",
-    },
-    googleButtonContainer: {
-        display: "flex",
-        justifyContent: "center",
-        marginTop: "1rem",
-    },
-    googleButton: {
-        marginTop: "1rem",
-        padding: "0.75rem",
-        backgroundColor: "#fff",
-        color: "#000",
-        border: "1px solid #ced4da",
-        borderRadius: "8px",
-        fontWeight: "500",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "1rem",
-        cursor: "pointer",
-        transition: "box-shadow 0.3s",
-    },
-    divider: {
-        marginTop: "1.5rem",
-        marginBottom: "1rem",
-        textAlign: "center",
-        color: "#adb5bd",
-        fontSize: "0.85rem",
-    },
-    error: {
-        color: "red",
-        fontSize: "0.9rem",
-        marginTop: "1rem",
-        textAlign: "center",
-    },
-    switchText: {
-        marginTop: "1rem",
-        textAlign: "center",
-        color: "#6c757d",
-        fontSize: "0.9rem",
-    },
-    link: {
-        color: "#0d6efd",
-        cursor: "pointer",
-        fontWeight: "bold",
-    },
-    spinner: {
-        width: "16px",
-        height: "16px",
-        border: "3px solid #fff",
-        borderTop: "3px solid transparent",
-        borderRadius: "50%",
-        display: "inline-block",
-        verticalAlign: "middle",
-        marginRight: "8px",
-        animation: "spin 1s linear infinite",
-    },
-
-
-};
-
-export default LoginPage;
+export default LoginPage
