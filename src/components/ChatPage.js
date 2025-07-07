@@ -307,7 +307,7 @@ function ChatPage() {
     }
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+        <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 relative">
             {/* Mobile Overlay */}
             {isMobile && sidebarOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setSidebarOpen(false)} />
