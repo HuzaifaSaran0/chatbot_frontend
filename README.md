@@ -50,4 +50,4 @@ CI=true npm test -- --watchAll=false
 
 ## Backend API
 
-This frontend expects a chatbot API to be available for authentication and chat. The API base URLs are currently set in the source files; update them if you are running a different backend.
+This frontend expects a chatbot API to be available for authentication and chat. The API base URLs are set in `src/components/ChatPage.js`, `src/components/LoginPage.js`, `src/components/SignupPage.js`, and `src/utils/auth.js`; update them if you are running a different backend.
